@@ -45,6 +45,7 @@ async function getBtsDetails(btsId: string) {
     return data;
 }
 
+// ------------------------------------
 // --- PERBAIKAN PADA PROPS KOMPONEN ---
 export default async function BtsDetailPage({ params }: { params: { id: string } }) {
   const btsId = params.id;
