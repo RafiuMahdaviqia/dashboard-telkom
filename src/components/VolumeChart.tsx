@@ -1,30 +1,44 @@
-'use client' // Komponen ini interaktif, jadi kita tandai sebagai Client Component
+'use client'
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { format } from 'date-fns';
 
-// Contoh data dummy untuk ditampilkan di grafik
-const dummyData = [
-  { name: '08:00', volume: 400 },
-  { name: '09:00', volume: 300 },
-  { name: '10:00', volume: 600 },
-  { name: '11:00', volume: 800 },
-  { name: '12:00', volume: 700 },
-];
+// Mendefinisikan tipe data yang akan diterima
+type VolumeData = {
+  created_at: string;
+  volume: number;
+};
 
-export default function VolumeChart() {
+// Mendefinisikan props yang akan diterima komponen
+type VolumeChartProps = {
+  initialData: VolumeData[];
+};
+
+// Terima props 'initialData' di sini
+export default function VolumeChart({ initialData }: VolumeChartProps) {
+
+  const formattedData = initialData.map(item => ({
+    time: format(new Date(item.created_at), 'HH:mm'), 
+    volume: item.volume,
+  }));
+
   return (
     <div className="bg-white shadow-md rounded-lg p-6 h-96">
-        <h2 className="text-xl font-semibold mb-4">Grafik Volume Tangki (Data Dummy)</h2>
-        <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={dummyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="volume" stroke="#8884d8" activeDot={{ r: 8 }} />
-            </LineChart>
-        </ResponsiveContainer>
+        <h2 className="text-xl font-semibold mb-4">Grafik Volume Tangki</h2>
+        {formattedData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={formattedData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="time" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="volume" name="Volume (Liter)" stroke="#8884d8" activeDot={{ r: 8 }} />
+                </LineChart>
+            </ResponsiveContainer>
+        ) : (
+            <p className="text-center text-gray-500 mt-10">Belum ada data untuk ditampilkan.</p>
+        )}
     </div>
   );
 }
