@@ -3,49 +3,48 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
-import { supabase } from '@/lib/supabaseClient'; // Impor client Supabase
+import { supabase } from '@/lib/supabaseClient';
 
-// Tipe data tetap sama
+// Tipe data yang diterima komponen
 type VolumeData = {
   created_at: string;
   volume: number;
 };
 
+// Tipe props yang diterima komponen
 type VolumeChartProps = {
   initialData: VolumeData[];
 };
 
 export default function VolumeChart({ initialData }: VolumeChartProps) {
-  // 1. Gunakan 'useState' untuk menyimpan dan memperbarui data grafik
+  // State untuk menyimpan data grafik, diisi pertama kali dengan data dari server
   const [data, setData] = useState(initialData);
 
-  // 2. Gunakan 'useEffect' untuk "mendengarkan" perubahan di database
+  // useEffect untuk subscribe ke perubahan data real-time
   useEffect(() => {
-    // Membuat channel subscription
     const channel = supabase
       .channel('realtime_volume_channel')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT', // Hanya dengarkan event 'INSERT' (data baru)
+          event: 'INSERT',
           schema: 'public',
           table: 'volume_tangki',
         },
         (payload) => {
-          console.log('Data baru diterima!', payload.new);
-          // Menambahkan data baru ke state yang sudah ada
+          // Menambahkan data baru ke state
           setData((currentData) => [...currentData, payload.new as VolumeData]);
         }
       )
       .subscribe();
 
-    // 3. Cleanup function: berhenti mendengarkan saat komponen dihancurkan
+    // Cleanup function untuk berhenti subscribe saat komponen tidak lagi ditampilkan
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase]); // Dependensi array
+  }, []); // Array dependensi kosong agar hanya berjalan sekali
 
-  // Format data dari 'state', bukan lagi dari 'initialData'
+  // Memformat data untuk ditampilkan di grafik (dilakukan di client-side)
   const formattedData = data.map(item => ({
     time: format(new Date(item.created_at), 'HH:mm'),
     volume: item.volume,
