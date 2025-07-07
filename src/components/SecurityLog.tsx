@@ -28,7 +28,7 @@ export default function SecurityLog({ initialData }: SecurityLogProps) {
                   src={log.image_url}
                   alt={`Akses pada ${log.created_at}`}
                   fill // Prop modern untuk menggantikan layout="fill"
-                  className="object-cover" // Kelas Tailwind untuk menggantikan objectFit="cover"
+                  className="object-contain" // Kelas Tailwind untuk menggantikan objectFit="cover"
                   unoptimized
                 />
               </div>

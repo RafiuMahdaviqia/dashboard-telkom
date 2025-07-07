@@ -1,5 +1,5 @@
 import VolumeChart from "@/components/VolumeChart";
-import SecurityLog from "@/components/SecurityLog"; // 1. Impor komponen baru
+import SecurityLog from "@/components/SecurityLog";
 import { supabase } from "@/lib/supabaseClient";
 
 export const revalidate = 60;
@@ -18,13 +18,12 @@ async function getVolumeData() {
   return data.reverse(); 
 }
 
-// 2. Buat fungsi baru untuk mengambil data log keamanan
 async function getSecurityLogData() {
   const { data, error } = await supabase
     .from('log_keamanan')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(6); // Ambil 6 log terakhir
+    .limit(6);
 
   if (error) {
     console.error("Error fetching security log:", error);
@@ -34,21 +33,27 @@ async function getSecurityLogData() {
 }
 
 export default async function HomePage() {
-  // 3. Panggil kedua fungsi untuk mengambil semua data
   const volumeData = await getVolumeData();
   const securityLogData = await getSecurityLogData();
 
   return (
-    <main className="container mx-auto p-4 sm:p-8">
-      <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-gray-800">
-        Dashboard Monitoring BTS
-      </h1>
+    // Ganti latar belakang utama menjadi lebih lembut
+    <div className="bg-slate-900 text-slate-300 min-h-screen">
+      <main className="container mx-auto p-4 sm:p-8">
+        {/* Buat judul lebih menonjol */}
+        <h1 className="text-3xl font-bold mb-8 text-white">
+          Dashboard Monitoring BTS
+        </h1>
+        
+        {/* Gunakan Grid untuk layout responsif */}
+          <div className="mb-8">
+                <VolumeChart initialData={volumeData} />
+              </div>
 
-      <VolumeChart initialData={volumeData} />
-
-      {/* 4. Tampilkan komponen log keamanan dengan datanya */}
-      <SecurityLog initialData={securityLogData} />
-
-    </main>
+              <div>
+                <SecurityLog initialData={securityLogData} />
+              </div>
+            </main>
+          </div>
   );
 }

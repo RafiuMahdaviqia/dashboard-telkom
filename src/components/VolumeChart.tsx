@@ -60,8 +60,8 @@ export default function VolumeChart({ initialData }: VolumeChartProps) {
                     <XAxis dataKey="time" />
                     <YAxis />
                     <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="volume" name="Volume (Liter)" stroke="#8884d8" activeDot={{ r: 8 }} />
+                    <Legend verticalAlign="top" height={36}/>
+                      <Line type="monotone" dataKey="volume" name="Volume (Liter)" stroke="#8884d8" activeDot={{ r: 8 }} />
                 </LineChart>
             </ResponsiveContainer>
         ) : (
