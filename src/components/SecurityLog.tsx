@@ -17,30 +17,34 @@ type SecurityLogProps = {
 
 export default function SecurityLog({ initialData }: SecurityLogProps) {
   return (
-    <div className="bg-white shadow-md rounded-lg p-6 mt-8">
-      <h2 className="text-xl font-semibold mb-4">Log Keamanan Akses BTS</h2>
+    <div className="bg-white p-6 rounded-xl shadow-md">
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">Log Keamanan Akses BTS</h2>
       {initialData.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {initialData.map((log) => (
-            <div key={log.id} className="border rounded-lg overflow-hidden">
-              <div className="relative w-full h-48">
+            <div key={log.id} className="flex flex-col rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+              {/* Bagian ini kita kembalikan untuk menampilkan gambar */}
+              <div className="relative w-full h-32 bg-gray-200">
                 <Image
                   src={log.image_url}
                   alt={`Akses pada ${log.created_at}`}
-                  fill // Prop modern untuk menggantikan layout="fill"
-                  className="object-contain" // Kelas Tailwind untuk menggantikan objectFit="cover"
+                  fill
+                  className="object-cover" // Gunakan 'object-cover' agar gambar mengisi area
                   unoptimized
+                  // Menambahkan fallback jika gambar gagal dimuat
+                  onError={(e) => { e.currentTarget.src = 'https://placehold.co/400x300/e2e8f0/94a3b8?text=Gagal+Muat'; }}
                 />
               </div>
+              {/* Area Timestamp */}
               <div className="p-2 bg-gray-50 text-sm text-center">
-                {/* Pemformatan tanggal dilakukan di sini (client-side) */}
-                {format(new Date(log.created_at), 'dd MMM yyyy, HH:mm:ss')}
+                <p className="text-gray-700">{format(new Date(log.created_at), 'dd MMM yyyy')}</p>
+                <p className="text-gray-500">{format(new Date(log.created_at), 'HH:mm:ss')}</p>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <p className="text-center text-gray-500 mt-10">Belum ada log keamanan yang tercatat.</p>
+        <p className="text-center text-gray-500 py-10">Belum ada log keamanan yang tercatat.</p>
       )}
     </div>
   );

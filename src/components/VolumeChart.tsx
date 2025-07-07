@@ -5,68 +5,69 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabaseClient';
 
-// Tipe data yang diterima komponen
 type VolumeData = {
   created_at: string;
   volume: number;
 };
 
-// Tipe props yang diterima komponen
 type VolumeChartProps = {
   initialData: VolumeData[];
 };
 
 export default function VolumeChart({ initialData }: VolumeChartProps) {
-  // State untuk menyimpan data grafik, diisi pertama kali dengan data dari server
   const [data, setData] = useState(initialData);
 
-  // useEffect untuk subscribe ke perubahan data real-time
   useEffect(() => {
     const channel = supabase
       .channel('realtime_volume_channel')
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'volume_tangki',
-        },
+        { event: 'INSERT', schema: 'public', table: 'volume_tangki' },
         (payload) => {
-          // Menambahkan data baru ke state
           setData((currentData) => [...currentData, payload.new as VolumeData]);
         }
       )
       .subscribe();
 
-    // Cleanup function untuk berhenti subscribe saat komponen tidak lagi ditampilkan
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []); // Array dependensi kosong agar hanya berjalan sekali
+  }, []);
 
-  // Memformat data untuk ditampilkan di grafik (dilakukan di client-side)
   const formattedData = data.map(item => ({
     time: format(new Date(item.created_at), 'HH:mm'),
     volume: item.volume,
   }));
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-6 h-96">
-        <h2 className="text-xl font-semibold mb-4">Grafik Volume Tangki</h2>
-        {formattedData.length > 0 ? (
+    <div className="bg-white p-6 rounded-xl shadow-md">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Grafik Volume Tangki</h2>
+        <div className="h-96"> {/* Memberi tinggi tetap pada container grafik */}
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={formattedData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="time" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend verticalAlign="top" height={36}/>
-                      <Line type="monotone" dataKey="volume" name="Volume (Liter)" stroke="#8884d8" activeDot={{ r: 8 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                    <XAxis dataKey="time" tick={{ fill: '#6b7280' }} fontSize={12} />
+                    <YAxis tick={{ fill: '#6b7280' }} fontSize={12} />
+                    <Tooltip 
+                        contentStyle={{ 
+                            backgroundColor: '#ffffff', 
+                            border: '1px solid #e0e0e0',
+                            borderRadius: '0.5rem'
+                        }}
+                    />
+                    <Legend verticalAlign="top" align="right" />
+                    <Line 
+                        type="monotone" 
+                        dataKey="volume" 
+                        name="Volume (Liter)" 
+                        stroke="#4f46e5" // Warna Indigo
+                        strokeWidth={2}
+                        dot={false}
+                        activeDot={{ r: 6, fill: '#4f46e5' }} 
+                    />
                 </LineChart>
             </ResponsiveContainer>
-        ) : (
-            <p className="text-center text-gray-500 mt-10">Menunggu data masuk...</p>
-        )}
+        </div>
     </div>
   );
 }
