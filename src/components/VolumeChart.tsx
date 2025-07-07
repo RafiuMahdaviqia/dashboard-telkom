@@ -1,24 +1,53 @@
 'use client'
 
+import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
+import { supabase } from '@/lib/supabaseClient'; // Impor client Supabase
 
-// Mendefinisikan tipe data yang akan diterima
+// Tipe data tetap sama
 type VolumeData = {
   created_at: string;
   volume: number;
 };
 
-// Mendefinisikan props yang akan diterima komponen
 type VolumeChartProps = {
   initialData: VolumeData[];
 };
 
-// Terima props 'initialData' di sini
 export default function VolumeChart({ initialData }: VolumeChartProps) {
+  // 1. Gunakan 'useState' untuk menyimpan dan memperbarui data grafik
+  const [data, setData] = useState(initialData);
 
-  const formattedData = initialData.map(item => ({
-    time: format(new Date(item.created_at), 'HH:mm'), 
+  // 2. Gunakan 'useEffect' untuk "mendengarkan" perubahan di database
+  useEffect(() => {
+    // Membuat channel subscription
+    const channel = supabase
+      .channel('realtime_volume_channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT', // Hanya dengarkan event 'INSERT' (data baru)
+          schema: 'public',
+          table: 'volume_tangki',
+        },
+        (payload) => {
+          console.log('Data baru diterima!', payload.new);
+          // Menambahkan data baru ke state yang sudah ada
+          setData((currentData) => [...currentData, payload.new as VolumeData]);
+        }
+      )
+      .subscribe();
+
+    // 3. Cleanup function: berhenti mendengarkan saat komponen dihancurkan
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]); // Dependensi array
+
+  // Format data dari 'state', bukan lagi dari 'initialData'
+  const formattedData = data.map(item => ({
+    time: format(new Date(item.created_at), 'HH:mm'),
     volume: item.volume,
   }));
 
@@ -37,7 +66,7 @@ export default function VolumeChart({ initialData }: VolumeChartProps) {
                 </LineChart>
             </ResponsiveContainer>
         ) : (
-            <p className="text-center text-gray-500 mt-10">Belum ada data untuk ditampilkan.</p>
+            <p className="text-center text-gray-500 mt-10">Menunggu data masuk...</p>
         )}
     </div>
   );
