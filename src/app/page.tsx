@@ -1,49 +1,69 @@
-import Link from 'next/link';
-import { supabase } from '@/lib/supabaseClient';
+import VolumeChart from "@/components/VolumeChart";
+import SecurityLog from "@/components/SecurityLog";
+import { supabase } from "@/lib/supabaseClient";
+import Link from "next/link";
 
-// Tipe data untuk setiap situs BTS
-type BtsSite = {
-  id: number;
-  name: string;
-  location: string;
-};
+export const revalidate = 60;
 
-// Fungsi untuk mengambil daftar BTS dari database
-async function getBtsSites(): Promise<BtsSite[]> {
+async function getVolumeData(btsId: string) {
   const { data, error } = await supabase
-    .from('bts_sites')
-    .select('*')
-    .order('id', { ascending: true });
+    .from('volume_tangki')
+    .select('created_at, volume')
+    .eq('bts_id', btsId)
+    .order('created_at', { ascending: false })
+    .limit(30);
 
-  if (error) {
-    console.error("Error fetching BTS sites:", error);
-    return [];
-  }
+  if (error) return [];
+  return data.reverse(); 
+}
+
+async function getSecurityLogData(btsId: string) {
+  const { data, error } = await supabase
+    .from('log_keamanan')
+    .select('*')
+    .eq('bts_id', btsId)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  if (error) return [];
   return data;
 }
 
-export default async function BtsListPage() {
-  const sites = await getBtsSites();
+async function getBtsDetails(btsId: string) {
+    const { data, error } = await supabase
+        .from('bts_sites')
+        .select('name')
+        .eq('id', btsId)
+        .single();
+
+    if (error) return { name: 'Tidak Ditemukan' };
+    return data;
+}
+
+// --- INI BAGIAN YANG DIPERBAIKI ---
+export default async function BtsDetailPage({ params }: { params: { id: string } }) {
+  const btsId = params.id;
+
+  const volumeData = await getVolumeData(btsId);
+  const securityLogData = await getSecurityLogData(btsId);
+  const btsDetails = await getBtsDetails(btsId);
 
   return (
     <div className="bg-gray-100 min-h-screen">
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
         <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Daftar Situs BTS</h1>
-          <p className="text-gray-500 mt-1">Pilih situs untuk melihat detail monitoring.</p>
+            <Link href="/" className="text-blue-500 hover:underline mb-4 block">&larr; Kembali ke Daftar BTS</Link>
+            <h1 className="text-3xl font-bold text-gray-800">
+                Dashboard Monitoring: {btsDetails.name}
+            </h1>
+            <p className="text-gray-500 mt-1">
+                Menampilkan data volume tangki dan log keamanan secara real-time.
+            </p>
         </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sites.map((site) => (
-            <Link 
-              href={`/bts/${site.id}`} 
-              key={site.id}
-              className="block bg-white p-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-transform duration-300"
-            >
-              <h2 className="text-xl font-bold text-blue-600">{site.name}</h2>
-              <p className="text-gray-600 mt-2">{site.location}</p>
-            </Link>
-          ))}
+        <div className="space-y-8">
+          <VolumeChart initialData={volumeData} />
+          <SecurityLog initialData={securityLogData} />
         </div>
       </main>
     </div>
