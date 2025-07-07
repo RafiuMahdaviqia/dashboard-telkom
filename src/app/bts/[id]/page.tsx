@@ -5,19 +5,16 @@ import Link from "next/link";
 
 export const revalidate = 60;
 
-// Terima 'params' untuk mendapatkan ID dari URL
-type PageProps = {
-  params: {
-    id: string;
-  };
-};
-
-// Fungsi mengambil data volume berdasarkan ID BTS
+// --- PERBAIKAN UTAMA ADA DI SINI ---
+// Kita tidak perlu lagi mendefinisikan tipe 'PageProps' secara manual.
+// Next.js secara otomatis akan menyediakan tipe yang benar.
+// Kita langsung definisikan tipe props di dalam parameter fungsi.
+// ------------------------------------
 async function getVolumeData(btsId: string) {
   const { data, error } = await supabase
     .from('volume_tangki')
     .select('created_at, volume')
-    .eq('bts_id', btsId) // Filter berdasarkan bts_id
+    .eq('bts_id', btsId)
     .order('created_at', { ascending: false })
     .limit(30);
 
@@ -25,12 +22,11 @@ async function getVolumeData(btsId: string) {
   return data.reverse(); 
 }
 
-// Fungsi mengambil log keamanan berdasarkan ID BTS
 async function getSecurityLogData(btsId: string) {
   const { data, error } = await supabase
     .from('log_keamanan')
     .select('*')
-    .eq('bts_id', btsId) // Filter berdasarkan bts_id
+    .eq('bts_id', btsId)
     .order('created_at', { ascending: false })
     .limit(5);
 
@@ -38,22 +34,21 @@ async function getSecurityLogData(btsId: string) {
   return data;
 }
 
-// Fungsi mengambil nama BTS
 async function getBtsDetails(btsId: string) {
     const { data, error } = await supabase
         .from('bts_sites')
         .select('name')
         .eq('id', btsId)
-        .single(); // Ambil satu baris data
+        .single();
     
     if (error) return { name: 'Tidak Ditemukan' };
     return data;
 }
 
-export default async function BtsDetailPage({ params }: PageProps) {
+// --- PERBAIKAN PADA PROPS KOMPONEN ---
+export default async function BtsDetailPage({ params }: { params: { id: string } }) {
   const btsId = params.id;
   
-  // Panggil semua fungsi dengan btsId
   const volumeData = await getVolumeData(btsId);
   const securityLogData = await getSecurityLogData(btsId);
   const btsDetails = await getBtsDetails(btsId);
