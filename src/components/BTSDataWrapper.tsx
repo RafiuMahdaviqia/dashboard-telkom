@@ -1,4 +1,4 @@
-'use client' // Tandai sebagai Client Component
+'use client'
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
@@ -22,11 +22,13 @@ export default function BtsDataWrapper() {
   const [btsDetails, setBtsDetails] = useState<BtsDetailsData>({ name: 'Memuat...' });
   const [loading, setLoading] = useState(true);
 
+  // --- PERBAIKAN UTAMA: SEMUA LOGIKA DISATUKAN DI SINI ---
   useEffect(() => {
     if (!btsId) return;
 
-    const fetchAllData = async () => {
-      // Fungsi-fungsi untuk mengambil data (sekarang di dalam client component)
+    // 1. Fungsi untuk mengambil data awal
+    const fetchInitialData = async () => {
+      setLoading(true);
       const getBtsDetails = supabase.from('bts_sites').select('name').eq('id', btsId).single();
       const getVolumeData = supabase.from('volume_tangki').select('created_at, volume').eq('bts_id', btsId).order('created_at', { ascending: true }).limit(30);
       const getSecurityLogData = supabase.from('log_keamanan').select('*').eq('bts_id', btsId).order('created_at', { ascending: false }).limit(5);
@@ -46,13 +48,33 @@ export default function BtsDataWrapper() {
       setLoading(false);
     };
 
-    fetchAllData();
-  }, [btsId]);
+    fetchInitialData();
 
+    // 2. Setup channel real-time setelah data awal diambil
+    const channel = supabase.channel(`realtime-bts-channel-${btsId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'volume_tangki', filter: `bts_id=eq.${btsId}` }, (payload) => {
+        console.log('Data volume baru diterima!', payload.new);
+        setVolumeData((currentData) => [...currentData.slice(-29), payload.new as VolumeData]);
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'log_keamanan', filter: `bts_id=eq.${btsId}` }, (payload) => {
+        console.log('Log keamanan baru diterima!', payload.new);
+        setSecurityLogData((currentData) => [payload.new as SecurityLogData, ...currentData.slice(0, 4)]);
+      })
+      .subscribe();
+
+    // 3. Fungsi cleanup untuk membersihkan subscription saat komponen dilepas
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    
+  }, [btsId]); // useEffect ini akan berjalan setiap kali btsId berubah
+
+  // Tampilan loading, tidak ada perubahan
   if (loading) {
     return <div className="text-center p-10">Memuat data...</div>;
   }
 
+  // Tampilan utama, tidak ada perubahan
   return (
     <>
       <header className="mb-8">
