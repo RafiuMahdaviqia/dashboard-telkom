@@ -1,70 +1,66 @@
-import VolumeChart from "@/components/VolumeChart";
-import SecurityLog from "@/components/SecurityLog";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
+import { HardDrive } from 'lucide-react'; // Mengimpor ikon untuk hiasan
 
-export const revalidate = 60;
-
-async function getVolumeData(btsId: string) {
+// Fungsi untuk mengambil DAFTAR semua BTS dari database
+async function getBtsList() {
   const { data, error } = await supabase
-    .from('volume_tangki')
-    .select('created_at, volume')
-    .eq('bts_id', btsId)
-    .order('created_at', { ascending: false })
-    .limit(30);
+    .from('bts_sites')
+    .select('id, name');
 
-  if (error) return [];
-  return data.reverse(); 
-}
-
-async function getSecurityLogData(btsId: string) {
-  const { data, error } = await supabase
-    .from('log_keamanan')
-    .select('*')
-    .eq('bts_id', btsId)
-    .order('created_at', { ascending: false })
-    .limit(5);
-
-  if (error) return [];
+  if (error) {
+    console.error("Gagal mengambil daftar BTS:", error);
+    return [];
+  }
   return data;
 }
 
-async function getBtsDetails(btsId: string) {
-    const { data, error } = await supabase
-        .from('bts_sites')
-        .select('name')
-        .eq('id', btsId)
-        .single();
-
-    if (error) return { name: 'Tidak Ditemukan' };
-    return data;
-}
-
-// --- INI BAGIAN YANG DIPERBAIKI ---
-export default async function BtsDetailPage({ params }: { params: { id: string } }) {
-  const btsId = params.id;
-
-  const volumeData = await getVolumeData(btsId);
-  const securityLogData = await getSecurityLogData(btsId);
-  const btsDetails = await getBtsDetails(btsId);
+export default async function HomePage() {
+  const btsList = await getBtsList();
 
   return (
-    <div className="bg-gray-100 min-h-screen">
+    <div className="bg-gray-50 min-h-screen">
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <header className="mb-8">
-            <Link href="/" className="text-blue-500 hover:underline mb-4 block">&larr; Kembali ke Daftar BTS</Link>
-            <h1 className="text-3xl font-bold text-gray-800">
-                Dashboard Monitoring: {btsDetails.name}
-            </h1>
-            <p className="text-gray-500 mt-1">
-                Menampilkan data volume tangki dan log keamanan secara real-time.
-            </p>
+        <header className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-gray-900">
+            Pusat Monitoring BTS
+          </h1>
+          <p className="text-lg text-gray-600 mt-2">
+            Pilih salah satu situs untuk melihat detail monitoring secara real-time.
+          </p>
         </header>
-
-        <div className="space-y-8">
-          <VolumeChart initialData={volumeData} />
-          <SecurityLog initialData={securityLogData} />
-        </div>
+        
+        {/* --- PERUBAHAN UTAMA DI SINI --- */}
+        {btsList.length > 0 ? (
+          // Menggunakan Grid Layout untuk memisahkan menjadi beberapa kolom
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {btsList.map((bts) => (
+              <Link 
+                href={`/bts/${bts.id}`} 
+                key={bts.id}
+                className="group block p-6 bg-white rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 border border-gray-200"
+              >
+                <div className="flex items-center space-x-4">
+                  <div className="bg-blue-100 p-3 rounded-full">
+                    <HardDrive className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-lg text-gray-800 group-hover:text-blue-600 transition-colors">
+                      {bts.name}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      ID: {bts.id}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-500">Tidak ada data situs BTS yang ditemukan di database.</p>
+          </div>
+        )}
       </main>
     </div>
   );
