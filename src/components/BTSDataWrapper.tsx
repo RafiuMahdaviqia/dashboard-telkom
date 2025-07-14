@@ -13,8 +13,16 @@ type VolumeData = { created_at: string; volume: number };
 type SecurityLogData = { id: number; created_at: string; image_url: string };
 type BtsDetailsData = { name: string; latitude?: number | null; longitude?: number | null; };
 
+// --- FUNGSI INI YANG DIPERBAIKI ---
 // Fungsi untuk mendapatkan tanggal hari ini dalam format YYYY-MM-DD
-const getTodayDateString = () => new Date().toISOString().split('T')[0];
+const getTodayDateString = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0'); // Bulan dimulai dari 0
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+// ---------------------------------
 
 export default function BtsDataWrapper() {
   const params = useParams();
@@ -30,9 +38,7 @@ export default function BtsDataWrapper() {
   useEffect(() => {
     if (!btsId) return;
 
-    // Fungsi untuk mengambil data awal dan update real-time
     const fetchData = async () => {
-      // Hanya tampilkan loading spinner saat pengambilan data pertama kali
       if (volumeData.length === 0) {
         setLoading(true);
       }
@@ -42,7 +48,7 @@ export default function BtsDataWrapper() {
 
       const getBtsDetails = supabase.from('bts_sites').select('name, latitude, longitude').eq('id', btsId).single();
       const getVolumeData = supabase.from('volume_tangki').select('created_at, volume').eq('bts_id', btsId).gte('created_at', startDate).lte('created_at', endDate).order('created_at', { ascending: true });
-      const getSecurityLogData = supabase.from('log_keamanan').select('*').eq('bts_id', btsId).order('created_at', { ascending: false }).limit(10); // Ambil 10 log terakhir
+      const getSecurityLogData = supabase.from('log_keamanan').select('*').eq('bts_id', btsId).order('created_at', { ascending: false }).limit(10);
 
       const [detailsResult, volumeResult, securityResult] = await Promise.all([
         getBtsDetails,
@@ -63,15 +69,12 @@ export default function BtsDataWrapper() {
 
     fetchData();
 
-    // Setup channel real-time
     const channel = supabase.channel(`realtime-bts-channel-${btsId}`)
       .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-        // Ambil ulang semua data saat ada perubahan apapun untuk menjaga konsistensi
         fetchData();
       })
       .subscribe();
 
-    // Fungsi cleanup
     return () => {
       supabase.removeChannel(channel);
     };
@@ -113,17 +116,11 @@ export default function BtsDataWrapper() {
       </div>
 
       <div className="flex flex-col gap-8">
-        {/* Baris pertama: Grafik (lebar penuh) */}
         <VolumeChart initialData={volumeData} />
-
-        {/* Baris kedua: Grid untuk Peta dan Log Keamanan */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Kolom pertama (2/3 lebar): Log Keamanan */}
             <div className="lg:col-span-2">
                 <SecurityLog initialData={securityLogData} />
             </div>
-
-            {/* Kolom kedua (1/3 lebar): Peta Lokasi */}
             <div className="lg:col-span-1">
                 <LocationMap latitude={btsDetails.latitude} longitude={btsDetails.longitude} />
             </div>
