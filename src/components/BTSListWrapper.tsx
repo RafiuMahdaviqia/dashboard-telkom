@@ -23,9 +23,14 @@ export default function BtsListWrapper() {
         .select('id, name')
         .order('id', { ascending: true });
 
-      if (data) {
-        setBtsList(data);
-      }
+    // Tambahkan pengecekan error ini
+    if (error) {
+    console.error("Gagal mengambil daftar BTS:", error);
+    }
+
+    if (data) {
+    setBtsList(data);
+    }
       setLoading(false);
     };
 
