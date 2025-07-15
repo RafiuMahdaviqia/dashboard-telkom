@@ -4,9 +4,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import Link from "next/link";
 
-import DailyAnalyticsChart from '@/components/DailyAnalyticsChart';
-import MonthlyAnalyticsChart from '@/components/MonthlyAnalyticsChart';
-import YearlyAnalyticsChart from '@/components/YearlyAnalyticsChart';
+// Impor tipe data spesifik dari setiap komponen grafik
+import DailyAnalyticsChart, { type DailyData } from '@/components/DailyAnalyticsChart';
+import MonthlyAnalyticsChart, { type MonthlyData } from '@/components/MonthlyAnalyticsChart';
+import YearlyAnalyticsChart, { type YearlyData } from '@/components/YearlyAnalyticsChart';
 import { TrendingUp, TrendingDown, BarChart2 } from 'lucide-react';
 
 type Tab = 'daily' | 'monthly' | 'yearly';
@@ -40,7 +41,7 @@ export default function AnalyticsPage() {
       setLoading(true);
       const supabase = createClient();
       let rpcName = '';
-      let params: any = { p_bts_id: selectedBts };
+      let params: { p_bts_id: number, p_year?: number, p_month?: number } = { p_bts_id: selectedBts };
 
       if (activeTab === 'daily') {
         rpcName = 'get_monthly_volume_average';
@@ -87,7 +88,6 @@ export default function AnalyticsPage() {
     <div className="bg-gray-50 min-h-screen">
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
         <header className="mb-8">
-            {/* --- TOMBOL KEMBALI KE DASHBOARD --- */}
             <Link href="/" className="text-blue-500 hover:underline mb-4 block">&larr; Kembali ke Dashboard Utama</Link>
             <h1 className="text-3xl font-bold text-gray-900">Analisis Data Volume</h1>
             <p className="text-gray-500 mt-1">
@@ -137,7 +137,6 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* --- KARTU STATISTIK --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4">
             <div className="bg-blue-100 p-3 rounded-full"><BarChart2 className="h-6 w-6 text-blue-600" /></div>
@@ -167,9 +166,15 @@ export default function AnalyticsPage() {
                  <div className="flex justify-center items-center h-96"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
             ) : (
                 <>
-                  {activeTab === 'daily' && <DailyAnalyticsChart data={analyticsData} month={selectedMonth} year={selectedYear} />}
-                  {activeTab === 'monthly' && <MonthlyAnalyticsChart data={analyticsData} year={selectedYear} />}
-                  {activeTab === 'yearly' && <YearlyAnalyticsChart data={analyticsData} />}
+                  {activeTab === 'daily' && 
+                    <DailyAnalyticsChart data={analyticsData as DailyData[]} month={selectedMonth} year={selectedYear} />
+                  }
+                  {activeTab === 'monthly' && 
+                    <MonthlyAnalyticsChart data={analyticsData as MonthlyData[]} year={selectedYear} />
+                  }
+                  {activeTab === 'yearly' && 
+                    <YearlyAnalyticsChart data={analyticsData as YearlyData[]} />
+                  }
                 </>
             )}
         </div>

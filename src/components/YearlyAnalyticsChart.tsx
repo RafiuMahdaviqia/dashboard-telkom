@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Inbox } from "lucide-react"; // Jangan lupa tambahkan import ikon
 
 
-type YearlyData = { year: number; average_volume: number; };
+export type YearlyData = { year: number; average_volume: number; };
 
 export default function YearlyAnalyticsChart({ data }: { data: YearlyData[] }) {
   // --- TAMBAHAN PENGECEKAN DATA ---

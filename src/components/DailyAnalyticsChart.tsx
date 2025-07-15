@@ -5,7 +5,7 @@ import { id } from 'date-fns/locale';
 import { Inbox } from "lucide-react"; // Jangan lupa tambahkan import ikon
 
 
-type DailyData = { day: string; average_volume: number; };
+export type DailyData = { day: string; average_volume: number; };
 type ChartProps = { data: DailyData[]; month: number; year: number; }
 
 export default function DailyAnalyticsChart({ data, month, year }: ChartProps) {

@@ -2,7 +2,7 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Inbox } from "lucide-react"; // Jangan lupa tambahkan import ikon
 
-type MonthlyData = { month_name: string; average_volume: number; };
+export type MonthlyData = { month_name: string; average_volume: number; };
 type ChartProps = { data: MonthlyData[]; year: number; }
 
 export default function MonthlyAnalyticsChart({ data, year }: ChartProps) {
