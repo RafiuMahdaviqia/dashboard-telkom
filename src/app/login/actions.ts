@@ -2,7 +2,13 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 
-export async function login(prevState: any, formData: FormData) {
+// Definisikan tipe untuk state yang dikembalikan
+type FormState = {
+  message: string;
+}
+
+// Gunakan tipe FormState untuk prevState
+export async function login(prevState: FormState, formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const supabase = await createClient()
@@ -13,8 +19,9 @@ export async function login(prevState: any, formData: FormData) {
   })
 
   if (error) {
-    return { message: 'Email atau password salah.' }
+    return {
+      message: 'Email atau password salah.',
+    }
   }
-  // Tambahkan pesan ke URL
   return redirect('/?message=Login berhasil!')
 }
