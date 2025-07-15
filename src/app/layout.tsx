@@ -6,6 +6,7 @@ import React from "react";
 import { Toaster } from "react-hot-toast";
 import { createClient } from "@/utils/supabase/server";
 import { ToastNotifier } from "@/components/ToastNotifier";
+import Link from 'next/link';
 
 // Ganti nama variabel font agar tidak bentrok
 const fontSans = FontSans({ 
@@ -38,7 +39,14 @@ export default async function RootLayout({
         <header className="sticky top-0 z-10 w-full border-b border-gray-700 bg-black">
           <div className="container mx-auto flex h-16 items-center justify-between px-4 text-white">
             <div className="font-bold">Telkom Monitoring</div>
-            <UserNav email={user?.email} />
+            <div className="flex items-center gap-4">
+                {/* --- TAMBAHKAN LINK DI SINI --- */}
+                <Link href="/analytics" className="text-sm text-gray-300 hover:text-white">
+                  Analisis
+                </Link>
+                <div className="h-6 w-px bg-gray-700"></div> {/* Garis pemisah */}
+                <UserNav email={user?.email} />
+            </div>
           </div>
         </header>
         {children}
