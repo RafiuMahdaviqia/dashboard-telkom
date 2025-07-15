@@ -3,7 +3,7 @@ import { cookies } from 'next/headers'
 
 // Fungsi ini sekarang bersifat async
 export const createClient = async () => {
-  // Kita 'await' cookies() di sini untuk mendapatkan nilainya
+  // Gunakan await untuk mendapatkan cookie store
   const cookieStore = await cookies()
 
   return createServerClient(
