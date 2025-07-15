@@ -12,9 +12,16 @@ import { TrendingUp, TrendingDown, BarChart2 } from 'lucide-react';
 
 type Tab = 'daily' | 'monthly' | 'yearly';
 type BtsSite = { id: number; name: string };
+// --- Definisikan tipe data yang lebih spesifik ---
+type AnalyticsResult = {
+  average_volume: number;
+  day?: string;
+  month_name?: string;
+  year?: number;
+};
 
 export default function AnalyticsPage() {
-  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('daily');
   
