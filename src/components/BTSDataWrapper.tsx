@@ -8,27 +8,22 @@ import VolumeChart from "./VolumeChart";
 import SecurityLog from "./SecurityLog";
 import LocationMap from "./LocationMap";
 
-// Definisikan tipe data yang kita harapkan
 type VolumeData = { created_at: string; volume: number };
 type SecurityLogData = { id: number; created_at: string; image_url: string };
 type BtsDetailsData = { name: string; latitude?: number | null; longitude?: number | null; };
 
-// --- FUNGSI INI YANG DIPERBAIKI ---
-// Fungsi untuk mendapatkan tanggal hari ini dalam format YYYY-MM-DD
 const getTodayDateString = () => {
   const today = new Date();
   const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0'); // Bulan dimulai dari 0
+  const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
-// ---------------------------------
 
 export default function BtsDataWrapper() {
   const params = useParams();
   const btsId = params.id as string;
 
-  // State untuk menyimpan semua data
   const [volumeData, setVolumeData] = useState<VolumeData[]>([]);
   const [securityLogData, setSecurityLogData] = useState<SecurityLogData[]>([]);
   const [btsDetails, setBtsDetails] = useState<BtsDetailsData>({ name: 'Memuat...' });
@@ -39,29 +34,30 @@ export default function BtsDataWrapper() {
     if (!btsId) return;
 
     const fetchData = async () => {
-      if (volumeData.length === 0) {
-        setLoading(true);
-      }
+      setLoading(true);
       
       const startDate = `${selectedDate}T00:00:00.000Z`;
       const endDate = `${selectedDate}T23:59:59.999Z`;
 
-      const getBtsDetails = supabase.from('bts_sites').select('name, latitude, longitude').eq('id', btsId).single();
+      const { data: detailsData, error: detailsError } = await supabase.from('bts_sites').select('name, latitude, longitude').eq('id', btsId).single();
+      
+      if (detailsError || !detailsData) {
+        console.error("Gagal memuat detail BTS:", detailsError);
+        setBtsDetails({ name: 'Gagal Memuat atau Tidak Ditemukan' });
+        setVolumeData([]);
+        setSecurityLogData([]);
+        setLoading(false);
+        return;
+      }
+
+      setBtsDetails(detailsData);
+
       const getVolumeData = supabase.from('volume_tangki').select('created_at, volume').eq('bts_id', btsId).gte('created_at', startDate).lte('created_at', endDate).order('created_at', { ascending: true });
       const getSecurityLogData = supabase.from('log_keamanan').select('*').eq('bts_id', btsId).order('created_at', { ascending: false }).limit(10);
-
-      const [detailsResult, volumeResult, securityResult] = await Promise.all([
-        getBtsDetails,
-        getVolumeData,
-        getSecurityLogData,
-      ]);
       
-      if (detailsResult.data) setBtsDetails(detailsResult.data);
-      else setBtsDetails({ name: 'Tidak Ditemukan' });
+      const [volumeResult, securityResult] = await Promise.all([getVolumeData, getSecurityLogData]);
 
       if (volumeResult.data) setVolumeData(volumeResult.data);
-      else setVolumeData([]);
-
       if (securityResult.data) setSecurityLogData(securityResult.data);
       
       setLoading(false);
@@ -70,9 +66,7 @@ export default function BtsDataWrapper() {
     fetchData();
 
     const channel = supabase.channel(`realtime-bts-channel-${btsId}`)
-      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-        fetchData();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public' }, () => fetchData())
       .subscribe();
 
     return () => {
@@ -85,7 +79,7 @@ export default function BtsDataWrapper() {
     return (
       <div className="flex justify-center items-center h-96">
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
-        <p className="ml-4 text-gray-600">Memuat data...</p>
+        <p className="ml-4 text-gray-600">Memuat data untuk {selectedDate}...</p>
       </div>
     );
   }
@@ -129,4 +123,3 @@ export default function BtsDataWrapper() {
     </>
   );
 }
-// Coba Redeploy
