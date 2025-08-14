@@ -20,6 +20,8 @@ const getTodayDateString = () => {
   return `${year}-${month}-${day}`;
 };
 
+const LOGS_PER_PAGE = 10; // Jumlah log yang dimuat per klik
+
 export default function BtsDataWrapper() {
   const params = useParams();
   const btsId = params.id as string;
@@ -29,12 +31,22 @@ export default function BtsDataWrapper() {
   const [btsDetails, setBtsDetails] = useState<BtsDetailsData>({ name: 'Memuat...' });
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(getTodayDateString());
+  
+  // --- STATE BARU UNTUK PAGINASI LOG KEAMANAN ---
+  const [logPage, setLogPage] = useState(0);
+  const [hasMoreLogs, setHasMoreLogs] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  // ---------------------------------------------
 
   useEffect(() => {
     if (!btsId) return;
 
-    const fetchData = async () => {
+    // Fungsi ini sekarang hanya untuk data awal
+    const fetchInitialData = async () => {
       setLoading(true);
+      setSecurityLogData([]); // Reset log saat filter berubah
+      setLogPage(0);
+      setHasMoreLogs(true);
       
       const startDate = `${selectedDate}T00:00:00.000Z`;
       const endDate = `${selectedDate}T23:59:59.999Z`;
@@ -53,20 +65,30 @@ export default function BtsDataWrapper() {
       setBtsDetails(detailsData);
 
       const getVolumeData = supabase.from('volume_tangki').select('created_at, volume').eq('bts_id', btsId).gte('created_at', startDate).lte('created_at', endDate).order('created_at', { ascending: true });
-      const getSecurityLogData = supabase.from('log_keamanan').select('*').eq('bts_id', btsId).order('created_at', { ascending: false }).limit(10);
       
-      const [volumeResult, securityResult] = await Promise.all([getVolumeData, getSecurityLogData]);
+      // Ambil halaman pertama dari log keamanan
+      const getSecurityLogData = supabase.from('log_keamanan').select('*').eq('bts_id', btsId).order('created_at', { ascending: false }).range(0, LOGS_PER_PAGE - 1);
 
+      const [volumeResult, securityResult] = await Promise.all([
+        getVolumeData,
+        getSecurityLogData,
+      ]);
+      
       if (volumeResult.data) setVolumeData(volumeResult.data);
-      if (securityResult.data) setSecurityLogData(securityResult.data);
+      if (securityResult.data) {
+        setSecurityLogData(securityResult.data);
+        if (securityResult.data.length < LOGS_PER_PAGE) {
+          setHasMoreLogs(false);
+        }
+      }
       
       setLoading(false);
     };
 
-    fetchData();
+    fetchInitialData();
 
     const channel = supabase.channel(`realtime-bts-channel-${btsId}`)
-      .on('postgres_changes', { event: '*', schema: 'public' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public' }, () => fetchInitialData())
       .subscribe();
 
     return () => {
@@ -74,6 +96,33 @@ export default function BtsDataWrapper() {
     };
     
   }, [btsId, selectedDate]);
+
+  // --- FUNGSI BARU UNTUK MEMUAT LOG TAMBAHAN ---
+  const loadMoreLogs = async () => {
+    setIsLoadingMore(true);
+    const nextPage = logPage + 1;
+    const from = nextPage * LOGS_PER_PAGE;
+    const to = from + LOGS_PER_PAGE - 1;
+
+    const { data: newLogs } = await supabase
+      .from('log_keamanan')
+      .select('*')
+      .eq('bts_id', btsId)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (newLogs && newLogs.length > 0) {
+      setSecurityLogData((prevLogs: SecurityLogData[]) => [...prevLogs, ...newLogs]);
+      setLogPage(nextPage);
+      if (newLogs.length < LOGS_PER_PAGE) {
+        setHasMoreLogs(false);
+      }
+    } else {
+      setHasMoreLogs(false);
+    }
+    setIsLoadingMore(false);
+  };
+  // ------------------------------------------
 
   if (loading) {
     return (
@@ -114,6 +163,18 @@ export default function BtsDataWrapper() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
                 <SecurityLog initialData={securityLogData} />
+                {/* --- TOMBOL "TAMPILKAN LEBIH BANYAK" --- */}
+                {hasMoreLogs && (
+                  <div className="mt-6 text-center">
+                    <button
+                      onClick={loadMoreLogs}
+                      disabled={isLoadingMore}
+                      className="rounded-lg bg-gray-200 px-6 py-2 font-semibold text-gray-700 hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isLoadingMore ? 'Memuat...' : 'Tampilkan Lebih Banyak'}
+                    </button>
+                  </div>
+                )}
             </div>
             <div className="lg:col-span-1">
                 <LocationMap latitude={btsDetails.latitude} longitude={btsDetails.longitude} />
