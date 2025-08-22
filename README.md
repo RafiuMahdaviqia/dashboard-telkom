@@ -5,12 +5,6 @@ Aplikasi web ini adalah sebuah dashboard terpusat yang dibangun untuk memantau i
 
 ---
 
-## Tampilan Aplikasi
-*(Anda bisa sisipkan screenshot halaman utama dan halaman detail di sini)*
-
-![Halaman Utama](https://dashboard-telkom.vercel.app/)
-![Halaman Detail](https://dashboard-telkom.vercel.app/bts/1)
-
 ---
 
 ## Fitur Utama
@@ -62,4 +56,4 @@ Aplikasi web ini adalah sebuah dashboard terpusat yang dibangun untuk memantau i
 
 ## Link Deployment
 Aplikasi ini sudah di-deploy dan dapat diakses melalui:
-**[dashboard-telkom.vercel.app](https://dashboard-telkom.vercel.app)** *(Ganti dengan URL Vercel Anda)*
+**[dashboard-telkom.vercel.app](https://dashboard-telkom.vercel.app)**
